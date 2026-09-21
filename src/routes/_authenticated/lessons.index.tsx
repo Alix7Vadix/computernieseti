@@ -4,7 +4,7 @@ import { LESSONS } from "@/content/course";
 import { fetchMyProgress, coursePercent } from "@/lib/progress";
 import { useSession } from "@/hooks/useSession";
 
-export const Route = createFileRoute("/_authenticated/lessons")({
+export const Route = createFileRoute("/_authenticated/lessons/")({
   head: () => ({
     meta: [
       { title: "Уроки курса — Информация и компьютер, 5 класс" },
