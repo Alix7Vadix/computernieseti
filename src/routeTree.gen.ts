@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedFinalTestRouteImport } from './routes/_authenticated/final-test'
 import { Route as AuthenticatedLessonsIndexRouteImport } from './routes/_authenticated/lessons.index'
+import { Route as AuthenticatedLessonsLessonIdRouteImport } from './routes/_authenticated/lessons.$lessonId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,21 +30,36 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedFinalTestRoute = AuthenticatedFinalTestRouteImport.update({
+  id: '/final-test',
+  path: '/final-test',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLessonsIndexRoute =
   AuthenticatedLessonsIndexRouteImport.update({
     id: '/lessons/',
     path: '/lessons/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedLessonsLessonIdRoute =
+  AuthenticatedLessonsLessonIdRouteImport.update({
+    id: '/lessons/$lessonId',
+    path: '/lessons/$lessonId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/final-test': typeof AuthenticatedFinalTestRoute
+  '/lessons/$lessonId': typeof AuthenticatedLessonsLessonIdRoute
   '/lessons/': typeof AuthenticatedLessonsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/final-test': typeof AuthenticatedFinalTestRoute
+  '/lessons/$lessonId': typeof AuthenticatedLessonsLessonIdRoute
   '/lessons': typeof AuthenticatedLessonsIndexRoute
 }
 export interface FileRoutesById {
@@ -50,15 +67,23 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/final-test': typeof AuthenticatedFinalTestRoute
+  '/_authenticated/lessons/$lessonId': typeof AuthenticatedLessonsLessonIdRoute
   '/_authenticated/lessons/': typeof AuthenticatedLessonsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/lessons/'
+  fullPaths: '/' | '/auth' | '/final-test' | '/lessons/$lessonId' | '/lessons/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/lessons'
+  to: '/' | '/auth' | '/final-test' | '/lessons/$lessonId' | '/lessons'
   id:
-    '__root__' | '/' | '/_authenticated' | '/auth' | '/_authenticated/lessons/'
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/final-test'
+    | '/_authenticated/lessons/$lessonId'
+    | '/_authenticated/lessons/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -90,6 +115,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/final-test': {
+      id: '/_authenticated/final-test'
+      path: '/final-test'
+      fullPath: '/final-test'
+      preLoaderRoute: typeof AuthenticatedFinalTestRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/lessons/': {
       id: '/_authenticated/lessons/'
       path: '/lessons'
@@ -97,14 +129,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLessonsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/lessons/$lessonId': {
+      id: '/_authenticated/lessons/$lessonId'
+      path: '/lessons/$lessonId'
+      fullPath: '/lessons/$lessonId'
+      preLoaderRoute: typeof AuthenticatedLessonsLessonIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedFinalTestRoute: typeof AuthenticatedFinalTestRoute
+  AuthenticatedLessonsLessonIdRoute: typeof AuthenticatedLessonsLessonIdRoute
   AuthenticatedLessonsIndexRoute: typeof AuthenticatedLessonsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedFinalTestRoute: AuthenticatedFinalTestRoute,
+  AuthenticatedLessonsLessonIdRoute: AuthenticatedLessonsLessonIdRoute,
   AuthenticatedLessonsIndexRoute: AuthenticatedLessonsIndexRoute,
 }
 
