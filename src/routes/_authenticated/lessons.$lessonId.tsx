@@ -153,7 +153,11 @@ function LessonPage() {
         </section>
       ))}
 
-      <VideoBlock title={lesson.video.title} search={lesson.video.search} />
+      <VideoBlock
+        title={lesson.video.title}
+        search={lesson.video.search}
+        url={lesson.video.url}
+      />
 
       <ExerciseBlock
         exercise={lesson.exercise}
