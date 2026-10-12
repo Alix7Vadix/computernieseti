@@ -11,8 +11,8 @@ import { Label } from "@/components/ui/label";
 type Role = "student" | "teacher";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>): { role: Role } => ({
-    role: search.role === "teacher" ? "teacher" : "student",
+  validateSearch: (search: Record<string, unknown>): { role?: Role } => ({
+    role: search["role"] === "teacher" ? "teacher" : "student",
   }),
   head: () => ({
     meta: [
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { role } = Route.useSearch();
+  const role: Role = Route.useSearch().role ?? "student";
   const navigate = useNavigate();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [lastName, setLastName] = useState("");
