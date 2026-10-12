@@ -102,21 +102,41 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activation_code: string | null
+          class_id: string | null
           created_at: string
+          first_name: string | null
           full_name: string
           id: string
+          last_name: string | null
         }
         Insert: {
+          activation_code?: string | null
+          class_id?: string | null
           created_at?: string
+          first_name?: string | null
           full_name?: string
           id: string
+          last_name?: string | null
         }
         Update: {
+          activation_code?: string | null
+          class_id?: string | null
           created_at?: string
+          first_name?: string | null
           full_name?: string
           id?: string
+          last_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quiz_attempts: {
         Row: {
