@@ -4,20 +4,39 @@ import {
   Link,
   useNavigate,
 } from "@tanstack/react-router";
+
 import { supabase } from "@/integrations/supabase/client";
 import { studentEmail, fullName } from "@/lib/studentLogin";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type Role = "student" | "teacher";
 
+type StudentClass = {
+  name: string;
+  code: string;
+};
+
+const STUDENT_CLASSES: StudentClass[] = [
+  { name: "5А", code: "5A" },
+  { name: "5Б", code: "5B" },
+  { name: "5В", code: "5V" },
+  { name: "5Г", code: "5G" },
+  { name: "5Д", code: "5D" },
+  { name: "5Е", code: "5E" },
+  { name: "5Ж", code: "5ZH" },
+];
+
 const STUDENT_CODE_STORAGE_KEY = "cor_student_code";
+const STUDENT_EMAIL_STORAGE_KEY = "cor_student_email";
+const STUDENT_CLASS_STORAGE_KEY = "cor_student_class";
 
 /**
- * Генерирует уникальный код ученика.
+ * Генерация уникального номера ученика.
  *
- * Пример:
+ * Например:
  * STUDENT-482731
  */
 function generateStudentCode(): string {
@@ -29,12 +48,9 @@ function generateStudentCode(): string {
 }
 
 /**
- * Создаём внутренний email только для Supabase.
+ * Внутренний email для Supabase.
  *
- * Ученик его никогда не вводит и не видит.
- *
- * Например:
- * student-482731-a8f31c@example.com
+ * Ученик его не вводит.
  */
 function studentEmailFromCode(code: string): string {
   const randomPart = Math.random()
@@ -77,7 +93,7 @@ export const Route = createFileRoute("/auth")({
       {
         property: "og:description",
         content:
-          "Ученики могут иметь одинаковые фамилии и имена.",
+          "Регистрация учеников с автоматическим выбором класса.",
       },
     ],
   }),
@@ -91,55 +107,80 @@ function AuthPage() {
 
   const isStudent = role === "student";
 
-  const [mode, setMode] = useState<"in" | "up">("in");
+  const [mode, setMode] =
+    useState<"in" | "up">("in");
 
-  const [lastName, setLastName] = useState("");
-  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] =
+    useState("");
 
-  const [teacherName, setTeacherName] = useState("");
-  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] =
+    useState("");
 
-  const [password, setPassword] = useState("");
+  const [teacherName, setTeacherName] =
+    useState("");
+
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
 
   /*
-   * Код ученика.
-   *
-   * При регистрации он создаётся автоматически.
-   * При входе берётся из localStorage.
+   * Выбранный класс ученика.
    */
-  const [studentCode, setStudentCode] = useState("");
+  const [selectedClass, setSelectedClass] =
+    useState("");
 
   /*
-   * Код, который только что был создан.
-   * Нужен, чтобы красиво показать его после регистрации.
+   * Код ученика хранится только для
+   * внутренней авторизации.
    */
-  const [createdStudentCode, setCreatedStudentCode] =
+  const [studentCode, setStudentCode] =
+    useState("");
+
+  /*
+   * Показываем созданный номер после
+   * регистрации.
+   */
+  const [
+    createdStudentCode,
+    setCreatedStudentCode,
+  ] = useState<string | null>(null);
+
+  const [error, setError] =
     useState<string | null>(null);
 
-  const [error, setError] = useState<string | null>(
-    null,
-  );
-
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] =
+    useState(false);
 
   /*
-   * При открытии страницы пробуем восстановить
-   * код ученика из браузера.
+   * Восстанавливаем данные ученика
+   * из браузера.
    */
   useEffect(() => {
     if (!isStudent) return;
 
-    const savedCode = localStorage.getItem(
-      STUDENT_CODE_STORAGE_KEY,
-    );
+    const savedCode =
+      localStorage.getItem(
+        STUDENT_CODE_STORAGE_KEY,
+      );
+
+    const savedClass =
+      localStorage.getItem(
+        STUDENT_CLASS_STORAGE_KEY,
+      );
 
     if (savedCode) {
       setStudentCode(savedCode);
     }
+
+    if (savedClass) {
+      setSelectedClass(savedClass);
+    }
   }, [isStudent]);
 
   /*
-   * Если пользователь уже вошёл,
+   * Если пользователь уже авторизован,
    * отправляем его в нужный раздел.
    */
   useEffect(() => {
@@ -149,10 +190,16 @@ function AuthPage() {
       const { data } =
         await supabase.auth.getSession();
 
-      if (cancelled || !data.session) return;
+      if (
+        cancelled ||
+        !data.session
+      ) {
+        return;
+      }
 
       const currentRole =
-        data.session.user.user_metadata?.role;
+        data.session.user.user_metadata
+          ?.role;
 
       if (currentRole === "teacher") {
         navigate({
@@ -175,13 +222,19 @@ function AuthPage() {
   }, [navigate]);
 
   /*
-   * При переключении роли/режима очищаем ошибку.
+   * При переключении режима/роли
+   * очищаем сообщения.
    */
   useEffect(() => {
     setError(null);
     setCreatedStudentCode(null);
   }, [role, mode]);
 
+  /*
+   * ===============================
+   * ОСНОВНАЯ ФУНКЦИЯ
+   * ===============================
+   */
   async function submit(
     e: React.FormEvent,
   ) {
@@ -193,28 +246,37 @@ function AuthPage() {
 
     try {
       /*
-       * ==============================
+       * ===============================
        * ПРОВЕРКИ
-       * ==============================
+       * ===============================
        */
 
-      if (
-        isStudent &&
-        (!lastName.trim() ||
-          !firstName.trim())
-      ) {
-        setError(
-          "Введите фамилию и имя",
-        );
-        return;
+      if (isStudent) {
+        if (!lastName.trim()) {
+          setError(
+            "Введите фамилию.",
+          );
+          return;
+        }
+
+        if (!firstName.trim()) {
+          setError(
+            "Введите имя.",
+          );
+          return;
+        }
+
+        if (!selectedClass) {
+          setError(
+            "Выберите класс.",
+          );
+          return;
+        }
       }
 
-      if (
-        !isStudent &&
-        !email.trim()
-      ) {
+      if (!isStudent && !email.trim()) {
         setError(
-          "Введите электронную почту",
+          "Введите электронную почту.",
         );
         return;
       }
@@ -224,40 +286,50 @@ function AuthPage() {
         !email.includes("@")
       ) {
         setError(
-          "Введите корректный адрес электронной почты",
+          "Введите корректный адрес электронной почты.",
         );
         return;
       }
 
       if (password.length < 6) {
         setError(
-          "Пароль должен быть не короче 6 символов",
+          "Пароль должен быть не короче 6 символов.",
         );
         return;
       }
 
       /*
-       * ==============================
+       * ===============================
        * РЕГИСТРАЦИЯ УЧЕНИКА
-       * ==============================
+       * ===============================
        */
 
       if (
         isStudent &&
         mode === "up"
       ) {
+        const selectedClassInfo =
+          STUDENT_CLASSES.find(
+            (item) =>
+              item.code ===
+              selectedClass,
+          );
+
+        if (!selectedClassInfo) {
+          setError(
+            "Выбранный класс не найден.",
+          );
+          return;
+        }
+
         /*
-         * Код создаётся АВТОМАТИЧЕСКИ.
-         *
-         * Ученик ничего не вводит.
+         * Генерируем уникальный номер.
          */
         const newStudentCode =
           generateStudentCode();
 
         /*
-         * Создаём уникальный внутренний email.
-         *
-         * Он нужен только Supabase.
+         * Генерируем внутренний email.
          */
         const internalEmail =
           studentEmailFromCode(
@@ -269,10 +341,18 @@ function AuthPage() {
           firstName,
         );
 
-        const { data, error: signUpError } =
+        /*
+         * Регистрируем пользователя
+         * в Supabase.
+         */
+        const {
+          data,
+          error: signUpError,
+        } =
           await supabase.auth.signUp({
             email: internalEmail,
             password,
+
             options: {
               emailRedirectTo:
                 window.location.origin,
@@ -281,21 +361,20 @@ function AuthPage() {
                 full_name: name,
                 role: "student",
 
-                /*
-                 * Сохраняем данные ученика.
-                 */
                 last_name:
                   lastName.trim(),
 
                 first_name:
                   firstName.trim(),
 
-                /*
-                 * Автоматически
-                 * присвоенный код.
-                 */
                 student_code:
                   newStudentCode,
+
+                class_code:
+                  selectedClassInfo.code,
+
+                class_name:
+                  selectedClassInfo.name,
               },
             },
           });
@@ -314,11 +393,21 @@ function AuthPage() {
         }
 
         /*
-         * Сохраняем код в браузере.
+         * Сохраняем данные локально.
          */
         localStorage.setItem(
           STUDENT_CODE_STORAGE_KEY,
           newStudentCode,
+        );
+
+        localStorage.setItem(
+          STUDENT_EMAIL_STORAGE_KEY,
+          internalEmail,
+        );
+
+        localStorage.setItem(
+          STUDENT_CLASS_STORAGE_KEY,
+          selectedClassInfo.code,
         );
 
         setStudentCode(
@@ -330,10 +419,35 @@ function AuthPage() {
         );
 
         /*
-         * Если Supabase сразу создал сессию —
-         * сразу отправляем ученика в уроки.
+         * Если Supabase сразу дал сессию,
+         * автоматически подключаем ученика
+         * к выбранному классу.
          */
         if (data.session) {
+          const {
+            error: joinError,
+          } =
+            await supabase.rpc(
+              "join_class_by_code",
+              {
+                p_join_code:
+                  selectedClassInfo.code,
+              },
+            );
+
+          if (joinError) {
+            console.error(
+              "join_class_by_code error:",
+              joinError,
+            );
+
+            setError(
+              `Аккаунт создан, но не удалось подключить к классу ${selectedClassInfo.name}: ${joinError.message}`,
+            );
+
+            return;
+          }
+
           navigate({
             to: "/lessons",
             replace: true,
@@ -343,78 +457,38 @@ function AuthPage() {
         }
 
         /*
-         * Если подтверждение email включено
-         * в Supabase, сессии сразу не будет.
-         *
-         * Для нашего внутреннего email это
-         * неудобно, поэтому показываем понятное
-         * сообщение вместо непонятной ошибки.
+         * Если сессии нет, значит включено
+         * подтверждение email.
          */
         setError(
-          "Аккаунт создан. Если вход не произошёл автоматически, отключите подтверждение email в Supabase → Authentication → Providers → Email.",
+          "Аккаунт создан, но Supabase не создал сессию. Для автоматической регистрации учеников отключите подтверждение email в Supabase → Authentication → Providers → Email.",
         );
 
         return;
       }
 
       /*
-       * ==============================
+       * ===============================
        * ВХОД УЧЕНИКА
-       * ==============================
+       * ===============================
        */
 
       if (isStudent) {
-        /*
-         * Для нового ученика используется
-         * автоматически присвоенный код.
-         *
-         * Код НЕ создаётся вручную.
-         */
-        if (!studentCode.trim()) {
+        if (!selectedClass) {
           setError(
-            "Код ученика ещё не сохранён. Зарегистрируйтесь заново или восстановите код из ранее сохранённого аккаунта.",
+            "Выберите класс.",
           );
-
           return;
         }
 
-        /*
-         * Восстанавливаем тот же принцип
-         * внутреннего email.
-         *
-         * Важно:
-         * здесь используется сохранённый код.
-         */
-        const code =
-          studentCode
-            .trim()
-            .toUpperCase();
-
-        /*
-         * Старые аккаунты у тебя продолжают
-         * работать через старую функцию.
-         *
-         * Для нового формата ниже нужен
-         * специальный email.
-         *
-         * Поскольку при регистрации к email
-         * добавлялась случайная часть,
-         * ищем сохранённый внутренний email.
-         */
-        const savedInternalEmail =
+        let loginEmail =
           localStorage.getItem(
-            `${STUDENT_CODE_STORAGE_KEY}_email`,
+            STUDENT_EMAIL_STORAGE_KEY,
           );
 
-        let loginEmail =
-          savedInternalEmail;
-
         /*
-         * Если email ещё не был сохранён,
-         * используем старый механизм.
-         *
-         * Это позволяет не ломать старых
-         * учеников.
+         * Старые аккаунты используют
+         * старую систему studentEmail().
          */
         if (!loginEmail) {
           loginEmail = studentEmail(
@@ -423,7 +497,15 @@ function AuthPage() {
           );
         }
 
+        if (!loginEmail) {
+          setError(
+            "Не удалось определить аккаунт ученика.",
+          );
+          return;
+        }
+
         const {
+          data: loginData,
           error: signInError,
         } =
           await supabase.auth.signInWithPassword(
@@ -440,10 +522,77 @@ function AuthPage() {
           );
 
           setError(
-            "Не удалось войти. Проверьте код ученика и пароль.",
+            "Не удалось войти. Проверьте фамилию, имя, пароль и номер ученика.",
           );
 
           return;
+        }
+
+        /*
+         * Сохраняем выбранный класс.
+         */
+        localStorage.setItem(
+          STUDENT_CLASS_STORAGE_KEY,
+          selectedClass,
+        );
+
+        /*
+         * Автоматически подключаем
+         * ученика к выбранному классу.
+         *
+         * Это особенно полезно для уже
+         * зарегистрированного ученика.
+         */
+        const {
+          error: joinError,
+        } =
+          await supabase.rpc(
+            "join_class_by_code",
+            {
+              p_join_code:
+                selectedClass,
+            },
+          );
+
+        if (joinError) {
+          console.error(
+            "join_class_by_code error:",
+            joinError,
+          );
+
+          /*
+           * Сам вход уже успешен.
+           * Поэтому не блокируем ученика,
+           * а просто показываем предупреждение.
+           */
+          console.warn(
+            "Ученик вошёл, но класс не подключён:",
+            joinError.message,
+          );
+        }
+
+        /*
+         * Обновляем код из metadata,
+         * если он существует.
+         */
+        const metadataCode =
+          loginData.user
+            ?.user_metadata
+            ?.student_code;
+
+        if (
+          metadataCode &&
+          typeof metadataCode ===
+            "string"
+        ) {
+          localStorage.setItem(
+            STUDENT_CODE_STORAGE_KEY,
+            metadataCode,
+          );
+
+          setStudentCode(
+            metadataCode,
+          );
         }
 
         navigate({
@@ -455,9 +604,9 @@ function AuthPage() {
       }
 
       /*
-       * ==============================
+       * ===============================
        * РЕГИСТРАЦИЯ УЧИТЕЛЯ
-       * ==============================
+       * ===============================
        */
 
       if (
@@ -472,9 +621,8 @@ function AuthPage() {
 
         if (!name) {
           setError(
-            "Введите Ф. И. О. учителя",
+            "Введите Ф. И. О. учителя.",
           );
-
           return;
         }
 
@@ -522,10 +670,6 @@ function AuthPage() {
           return;
         }
 
-        /*
-         * Если сессия создана сразу —
-         * отправляем учителя в панель.
-         */
         if (data.session) {
           navigate({
             to: "/teacher",
@@ -536,16 +680,16 @@ function AuthPage() {
         }
 
         setError(
-          "Учитель зарегистрирован. Если вход не произошёл автоматически, проверьте настройки подтверждения email в Supabase.",
+          "Учитель зарегистрирован. Если вход не произошёл автоматически, проверьте подтверждение email в Supabase.",
         );
 
         return;
       }
 
       /*
-       * ==============================
+       * ===============================
        * ВХОД УЧИТЕЛЯ
-       * ==============================
+       * ===============================
        */
 
       const teacherEmail =
@@ -605,7 +749,7 @@ function AuthPage() {
           ← На главную
         </Link>
 
-        {/* Роль */}
+        {/* Выбор роли */}
         <div className="mt-4 mb-5 grid grid-cols-2 gap-2">
           <Link
             to="/auth"
@@ -650,15 +794,12 @@ function AuthPage() {
         <p className="mb-4 text-sm text-muted-foreground">
           {isStudent
             ? mode === "up"
-              ? "Введите фамилию, имя и пароль. Уникальный номер ученика система присвоит автоматически."
-              : "Введите свои данные для входа. Для нового аккаунта используется автоматически присвоенный номер ученика."
+              ? "Введите фамилию, имя, выберите свой класс и придумайте пароль."
+              : "Введите свои данные, выберите класс и войдите в систему."
             : "Учитель входит по электронной почте и паролю."}
         </p>
 
-        {/* ========================= */}
-        {/* УСПЕШНАЯ РЕГИСТРАЦИЯ */}
-        {/* ========================= */}
-
+        {/* Успешная регистрация */}
         {createdStudentCode && (
           <div className="mb-4 rounded-xl border-2 border-green-500 bg-green-50 p-4">
             <p className="font-bold text-green-800">
@@ -666,8 +807,8 @@ function AuthPage() {
             </p>
 
             <p className="mt-2 text-sm text-green-700">
-              Система автоматически присвоила
-              вам номер:
+              Вам автоматически присвоен
+              номер:
             </p>
 
             <p className="mt-2 text-center text-2xl font-extrabold tracking-wider text-green-800">
@@ -676,15 +817,11 @@ function AuthPage() {
 
             <p className="mt-2 text-xs text-green-700">
               Номер сохранён автоматически.
-              Запишите его на всякий случай.
             </p>
           </div>
         )}
 
-        {/* ========================= */}
-        {/* ФОРМА */}
-        {/* ========================= */}
-
+        {/* Форма */}
         <form
           onSubmit={submit}
           className="space-y-3"
@@ -729,7 +866,46 @@ function AuthPage() {
                 />
               </div>
 
-              {/* При регистрации код НЕ показываем */}
+              {/* КЛАСС */}
+              <div>
+                <Label htmlFor="student-class">
+                  Класс
+                </Label>
+
+                <select
+                  id="student-class"
+                  value={selectedClass}
+                  onChange={(e) =>
+                    setSelectedClass(
+                      e.target.value,
+                    )
+                  }
+                  className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">
+                    Выберите класс
+                  </option>
+
+                  {STUDENT_CLASSES.map(
+                    (item) => (
+                      <option
+                        key={item.code}
+                        value={item.code}
+                      >
+                        {item.name}
+                      </option>
+                    ),
+                  )}
+                </select>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Выберите свой класс.
+                  Система автоматически
+                  подключит вас к нему.
+                </p>
+              </div>
+
+              {/* Номер ученика */}
               {mode === "in" && (
                 <div>
                   <Label htmlFor="student-code">
@@ -744,13 +920,12 @@ function AuthPage() {
                         e.target.value.toUpperCase(),
                       )
                     }
-                    placeholder="Будет присвоен автоматически"
+                    placeholder="Например STUDENT-482731"
                   />
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Для зарегистрированного
-                    аккаунта номер сохраняется
-                    в этом браузере автоматически.
+                    Для нового аккаунта номер
+                    создаётся автоматически.
                   </p>
                 </div>
               )}
@@ -778,7 +953,7 @@ function AuthPage() {
                 </div>
               )}
 
-              {/* Email учителя */}
+              {/* Email */}
               <div>
                 <Label htmlFor="em">
                   Электронная почта
