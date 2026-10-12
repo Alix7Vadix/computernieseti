@@ -84,7 +84,10 @@ function TeacherPage() {
     if (!name) return;
     const code = Math.random().toString(36).slice(2, 8).toUpperCase();
     const { error } = await supabase.from("classes").insert({ name, teacher_id: me!.id, join_code: code });
-    if (error) return toast.error("Не удалось создать класс");
+    if (error) {
+      toast.error("Не удалось создать класс");
+      return;
+    }
     setNewClass("");
     toast.success(`Класс ${name} создан`);
     await queryClient.invalidateQueries({ queryKey: ["teacher-classes"] });
