@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedFinalTestRouteImport } from './routes/_authenticated/final-test'
+import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
+import { Route as AuthenticatedTeacherRouteImport } from './routes/_authenticated/teacher'
 import { Route as AuthenticatedLessonsIndexRouteImport } from './routes/_authenticated/lessons.index'
 import { Route as AuthenticatedLessonsLessonIdRouteImport } from './routes/_authenticated/lessons.$lessonId'
 
@@ -35,6 +37,16 @@ const AuthenticatedFinalTestRoute = AuthenticatedFinalTestRouteImport.update({
   path: '/final-test',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTeacherRoute = AuthenticatedTeacherRouteImport.update({
+  id: '/teacher',
+  path: '/teacher',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLessonsIndexRoute =
   AuthenticatedLessonsIndexRouteImport.update({
     id: '/lessons/',
@@ -52,6 +64,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/final-test': typeof AuthenticatedFinalTestRoute
+  '/progress': typeof AuthenticatedProgressRoute
+  '/teacher': typeof AuthenticatedTeacherRoute
   '/lessons/$lessonId': typeof AuthenticatedLessonsLessonIdRoute
   '/lessons/': typeof AuthenticatedLessonsIndexRoute
 }
@@ -59,6 +73,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/final-test': typeof AuthenticatedFinalTestRoute
+  '/progress': typeof AuthenticatedProgressRoute
+  '/teacher': typeof AuthenticatedTeacherRoute
   '/lessons/$lessonId': typeof AuthenticatedLessonsLessonIdRoute
   '/lessons': typeof AuthenticatedLessonsIndexRoute
 }
@@ -68,20 +84,38 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/final-test': typeof AuthenticatedFinalTestRoute
+  '/_authenticated/progress': typeof AuthenticatedProgressRoute
+  '/_authenticated/teacher': typeof AuthenticatedTeacherRoute
   '/_authenticated/lessons/$lessonId': typeof AuthenticatedLessonsLessonIdRoute
   '/_authenticated/lessons/': typeof AuthenticatedLessonsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/final-test' | '/lessons/$lessonId' | '/lessons/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/final-test'
+    | '/progress'
+    | '/teacher'
+    | '/lessons/$lessonId'
+    | '/lessons/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/final-test' | '/lessons/$lessonId' | '/lessons'
+  to:
+    | '/'
+    | '/auth'
+    | '/final-test'
+    | '/progress'
+    | '/teacher'
+    | '/lessons/$lessonId'
+    | '/lessons'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/final-test'
+    | '/_authenticated/progress'
+    | '/_authenticated/teacher'
     | '/_authenticated/lessons/$lessonId'
     | '/_authenticated/lessons/'
   fileRoutesById: FileRoutesById
@@ -122,6 +156,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinalTestRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/progress': {
+      id: '/_authenticated/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof AuthenticatedProgressRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/teacher': {
+      id: '/_authenticated/teacher'
+      path: '/teacher'
+      fullPath: '/teacher'
+      preLoaderRoute: typeof AuthenticatedTeacherRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/lessons/': {
       id: '/_authenticated/lessons/'
       path: '/lessons'
@@ -141,12 +189,16 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinalTestRoute: typeof AuthenticatedFinalTestRoute
+  AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
+  AuthenticatedTeacherRoute: typeof AuthenticatedTeacherRoute
   AuthenticatedLessonsLessonIdRoute: typeof AuthenticatedLessonsLessonIdRoute
   AuthenticatedLessonsIndexRoute: typeof AuthenticatedLessonsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFinalTestRoute: AuthenticatedFinalTestRoute,
+  AuthenticatedProgressRoute: AuthenticatedProgressRoute,
+  AuthenticatedTeacherRoute: AuthenticatedTeacherRoute,
   AuthenticatedLessonsLessonIdRoute: AuthenticatedLessonsLessonIdRoute,
   AuthenticatedLessonsIndexRoute: AuthenticatedLessonsIndexRoute,
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -159,9 +159,8 @@ function TeacherPage() {
                   const done = rows.filter((r) => r.completed).length;
                   const open = openStudent === s.id;
                   return (
-                    <>
+                    <Fragment key={s.id}>
                       <tr
-                        key={s.id}
                         className="cursor-pointer border-b border-border/30 hover:bg-muted"
                         onClick={() => setOpenStudent(open ? null : s.id)}
                       >
@@ -196,7 +195,7 @@ function TeacherPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
