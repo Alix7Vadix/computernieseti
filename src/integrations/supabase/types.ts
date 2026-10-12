@@ -102,21 +102,41 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activation_code: string | null
+          class_id: string | null
           created_at: string
+          first_name: string | null
           full_name: string
           id: string
+          last_name: string | null
         }
         Insert: {
+          activation_code?: string | null
+          class_id?: string | null
           created_at?: string
+          first_name?: string | null
           full_name?: string
           id: string
+          last_name?: string | null
         }
         Update: {
+          activation_code?: string | null
+          class_id?: string | null
           created_at?: string
+          first_name?: string | null
           full_name?: string
           id?: string
+          last_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quiz_attempts: {
         Row: {
@@ -180,6 +200,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_standard_classes: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -189,6 +210,14 @@ export type Database = {
       }
       is_member_of_class: { Args: { _class_id: string }; Returns: boolean }
       is_my_student: { Args: { _student_id: string }; Returns: boolean }
+      join_class_by_code: {
+        Args: { p_join_code: string }
+        Returns: {
+          joined_class_code: string
+          joined_class_id: string
+          joined_class_name: string
+        }[]
+      }
     }
     Enums: {
       app_role: "student" | "teacher"

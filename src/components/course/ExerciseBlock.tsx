@@ -33,7 +33,7 @@ function Categorize({
   onDone,
 }: {
   ex: Extract<Exercise, { kind: "categorize" }>;
-  onDone?: (ok: boolean) => void;
+  onDone?: ((ok: boolean) => void) | undefined;
 }) {
   const [placed, setPlaced] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<string | null>(null);
@@ -164,7 +164,7 @@ function Match({
   onDone,
 }: {
   ex: Extract<Exercise, { kind: "match" }>;
-  onDone?: (ok: boolean) => void;
+  onDone?: ((ok: boolean) => void) | undefined;
 }) {
   const options = useMemo(() => shuffle(ex.pairs.map((p) => p.right)), [ex]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -232,7 +232,7 @@ function Order({
   onDone,
 }: {
   ex: Extract<Exercise, { kind: "order" }>;
-  onDone?: (ok: boolean) => void;
+  onDone?: ((ok: boolean) => void) | undefined;
 }) {
   const [list, setList] = useState(() => shuffle(ex.items));
   const [checked, setChecked] = useState(false);

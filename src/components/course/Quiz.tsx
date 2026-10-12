@@ -1,19 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import type { Question } from "@/content/course";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useMe } from "@/hooks/useSession";
 
 export type QuizResult = {
   score: number;
   max: number;
   percent: number;
-  answers: {
-    q: string;
-    chosen: number;
-    correct: number;
-    ok: boolean;
-  }[];
+  answers: { q: string; chosen: number; correct: number; ok: boolean }[];
 };
 
 type Props = {
@@ -33,43 +27,10 @@ export function Quiz({
   onFinish,
   showReview = true,
 }: Props) {
-  const { data: me } = useMe();
-
   const [chosen, setChosen] = useState<Record<number, number>>({});
   const [result, setResult] = useState<QuizResult | null>(null);
 
-  /*
-   * Уникальный идентификатор текущего набора вопросов.
-   *
-   * Если пользователь открыл другой тест,
-   * старые ответы больше не должны оставаться.
-   */
-  const questionsKey = useMemo(
-    () =>
-      questions
-        .map(
-          (q) =>
-            `${q.q}|${q.correct}|${q.options.join("|")}`,
-        )
-        .join("||"),
-    [questions],
-  );
-
-  /*
-   * Сбрасываем ответы:
-   * 1. при смене ученика;
-   * 2. при смене теста/набора вопросов.
-   *
-   * Это важно, если один браузер используют разные ученики.
-   */
-  useEffect(() => {
-    setChosen({});
-    setResult(null);
-  }, [me?.id, questionsKey]);
-
-  const answeredAll = questions.every(
-    (_, i) => chosen[i] !== undefined,
-  );
+  const answeredAll = questions.every((_, i) => chosen[i] !== undefined);
 
   function submit() {
     const answers = questions.map((q, i) => ({
@@ -78,19 +39,13 @@ export function Quiz({
       correct: q.correct,
       ok: chosen[i] === q.correct,
     }));
-
     const score = answers.filter((a) => a.ok).length;
-
     const res: QuizResult = {
       score,
       max: questions.length,
-      percent:
-        questions.length > 0
-          ? Math.round((score / questions.length) * 100)
-          : 0,
+      percent: Math.round((score / questions.length) * 100),
       answers,
     };
-
     setResult(res);
     onFinish?.(res);
   }
@@ -108,52 +63,27 @@ export function Quiz({
 
       <ol className="space-y-5">
         {questions.map((q, i) => (
-          <li
-            key={`${questionsKey}-${i}`}
-            className="rounded-2xl bg-muted/60 p-4"
-          >
+          <li key={i} className="rounded-2xl bg-muted/60 p-4">
             <p className="mb-3 font-semibold">
               {i + 1}. {q.q}
             </p>
-
             <div className="grid gap-2 sm:grid-cols-2">
               {q.options.map((opt, oi) => {
                 const picked = chosen[i] === oi;
-
-                const isCorrect =
-                  !!result && oi === q.correct;
-
-                const isWrongPick =
-                  !!result &&
-                  picked &&
-                  oi !== q.correct;
-
+                const isCorrect = result && oi === q.correct;
+                const isWrongPick = result && picked && oi !== q.correct;
                 return (
                   <button
                     key={oi}
                     type="button"
                     disabled={!!result}
-                    onClick={() =>
-                      setChosen((current) => ({
-                        ...current,
-                        [i]: oi,
-                      }))
-                    }
+                    onClick={() => setChosen((c) => ({ ...c, [i]: oi }))}
                     className={cn(
                       "rounded-xl border-2 border-border bg-background px-3 py-2 text-left text-sm font-medium transition-transform",
-
-                      !result &&
-                        "hover:-translate-y-0.5 hover:bg-accent",
-
-                      picked &&
-                        !result &&
-                        "bg-primary text-primary-foreground",
-
-                      isCorrect &&
-                        "border-[color:var(--color-success)] bg-[color:var(--color-success)] text-white",
-
-                      isWrongPick &&
-                        "border-destructive bg-destructive text-destructive-foreground",
+                      !result && "hover:-translate-y-0.5 hover:bg-accent",
+                      picked && !result && "bg-primary text-primary-foreground",
+                      isCorrect && "border-[color:var(--color-success)] bg-[color:var(--color-success)] text-white",
+                      isWrongPick && "border-destructive bg-destructive text-destructive-foreground",
                     )}
                   >
                     {opt}
@@ -161,22 +91,11 @@ export function Quiz({
                 );
               })}
             </div>
-
             {result && showReview && (
               <p className="mt-2 text-sm">
-                {result.answers[i]!.ok
-                  ? "✅ Верно! "
-                  : "❌ Правильный ответ: "}
-
-                {!result.answers[i]!.ok && (
-                  <strong>
-                    {q.options[q.correct]}.{" "}
-                  </strong>
-                )}
-
-                <span className="text-muted-foreground">
-                  {q.explain}
-                </span>
+                {result.answers[i]!.ok ? "✅ Верно! " : "❌ Правильный ответ: "}
+                {!result.answers[i]!.ok && <strong>{q.options[q.correct]}. </strong>}
+                <span className="text-muted-foreground">{q.explain}</span>
               </p>
             )}
           </li>
@@ -185,34 +104,21 @@ export function Quiz({
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         {!result ? (
-          <Button
-            size="lg"
-            disabled={!answeredAll}
-            onClick={submit}
-          >
+          <Button size="lg" disabled={!answeredAll} onClick={submit}>
             {submitLabel}
           </Button>
         ) : (
           <>
             <div className="rounded-2xl bg-primary px-4 py-2 font-bold text-primary-foreground">
-              Результат: {result.score} из {result.max} (
-              {result.percent}%)
+              Результат: {result.score} из {result.max} ({result.percent}%)
             </div>
-
-            <Button
-              size="lg"
-              variant="secondary"
-              onClick={restart}
-            >
+            <Button size="lg" variant="secondary" onClick={restart}>
               Пройти снова
             </Button>
           </>
         )}
-
         {!answeredAll && !result && (
-          <span className="text-sm text-muted-foreground">
-            Ответь на все вопросы
-          </span>
+          <span className="text-sm text-muted-foreground">Ответь на все вопросы</span>
         )}
       </div>
     </section>
